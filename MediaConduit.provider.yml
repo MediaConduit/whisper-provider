@@ -1,0 +1,115 @@
+id: whisper-docker-provider
+name: Whisper Docker Provider
+description: Dynamic provider for OpenAI Whisper speech-to-text processing via Docker
+version: 1.0.0
+author: MediaConduit
+type: local
+capabilities:
+  - audio-to-text
+  - speech-to-text
+  - transcription
+  - translation
+
+# Docker service configuration
+serviceUrl: https://github.com/MediaConduit/whisper-service
+
+# Provider models
+models:
+  - id: whisper-stt
+    name: Whisper STT
+    description: OpenAI Whisper speech-to-text model
+    capabilities: [audio-to-text]
+    parameters:
+      language:
+        type: string
+        description: Language code (auto, en, es, fr, etc.)
+        default: auto
+      task:
+        type: string
+        description: Task type (transcribe or translate)
+        default: transcribe
+        enum: [transcribe, translate]
+      wordTimestamps:
+        type: boolean
+        description: Include word-level timestamps
+        default: false
+
+  - id: whisper-base
+    name: Whisper Base
+    description: Whisper base model for general transcription
+    capabilities: [audio-to-text, transcription]
+
+  - id: whisper-small
+    name: Whisper Small
+    description: Whisper small model - faster processing
+    capabilities: [audio-to-text, transcription]
+
+  - id: whisper-medium
+    name: Whisper Medium
+    description: Whisper medium model - balanced speed and accuracy
+    capabilities: [audio-to-text, transcription, translation]
+
+  - id: whisper-large
+    name: Whisper Large
+    description: Whisper large model - highest accuracy
+    capabilities: [audio-to-text, transcription, translation]
+
+# Configuration schema
+configSchema:
+  type: object
+  properties:
+    serviceUrl:
+      type: string
+      description: URL to Whisper service (GitHub repo or HTTP endpoint)
+      default: https://github.com/MediaConduit/whisper-service
+    baseUrl:
+      type: string
+      description: Base URL for direct HTTP configuration
+      pattern: "^https?://.+"
+    timeout:
+      type: number
+      description: Request timeout in milliseconds
+      minimum: 1000
+      maximum: 600000
+      default: 300000
+    retries:
+      type: number
+      description: Number of retry attempts
+      minimum: 0
+      maximum: 5
+      default: 1
+
+# Requirements
+requirements:
+  node: ">=18.0.0"
+  docker: ">=20.0.0"
+  memory: "2GB"
+  diskSpace: "1GB"
+
+# Supported audio formats
+supportedFormats:
+  input: [mp3, wav, flac, m4a, ogg, wma, aac, opus, webm]
+  output: [text]
+
+# Language support
+supportedLanguages:
+  - auto
+  - en (English)
+  - es (Spanish) 
+  - fr (French)
+  - de (German)
+  - it (Italian)
+  - pt (Portuguese)
+  - ru (Russian)
+  - ja (Japanese)
+  - ko (Korean)
+  - zh (Chinese)
+  - ar (Arabic)
+  - hi (Hindi)
+  - nl (Dutch)
+  - sv (Swedish)
+  - da (Danish)
+  - no (Norwegian)
+  - fi (Finnish)
+  - pl (Polish)
+  - tr (Turkish)

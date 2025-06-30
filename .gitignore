@@ -1,0 +1,33 @@
+node_modules/
+dist/
+*.log
+.env
+.env.local
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build outputs
+*.tgz
+*.tar.gz
+
+# Testing
+coverage/
+.nyc_output
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+
+# OS generated files
+.DS_Store?
+ehthumbs.db
+Icon?
+
+# MediaConduit cache
+.mediaconduit/
