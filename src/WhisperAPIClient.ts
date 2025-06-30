@@ -223,4 +223,11 @@ export class WhisperAPIClient {
       duration: response.duration
     };
   }
+
+  /**
+   * Get the current base URL for debugging
+   */
+  getBaseUrl(): string {
+    return this.baseUrl;
+  }
 }

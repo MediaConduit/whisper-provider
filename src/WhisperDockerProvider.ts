@@ -103,6 +103,29 @@ export class WhisperDockerProvider extends AbstractDockerProvider {
   }
 
   /**
+   * Update API client with new port after service startup
+   */
+  private updateAPIClientPort(): void {
+    if (this.dockerServiceManager && typeof this.dockerServiceManager.getServiceInfo === 'function') {
+      try {
+        const serviceInfo = this.dockerServiceManager.getServiceInfo();
+        const port = serviceInfo.ports?.[0];
+        
+        if (port && port !== 9000) {
+          const baseUrl = `http://localhost:${port}`;
+          console.log(`🔄 [updateAPIClientPort] Updating API client to use dynamic port: ${baseUrl}`);
+          this.apiClient = new WhisperAPIClient(baseUrl, 30000);
+          console.log(`🌐 API client reconfigured for: ${baseUrl}`);
+        } else {
+          console.log(`🔍 [updateAPIClientPort] No dynamic port detected, keeping current configuration`);
+        }
+      } catch (error) {
+        console.warn('Failed to update API client port:', error);
+      }
+    }
+  }
+
+  /**
    * Configure the provider with service settings and Docker service
    */
   async configure(config: any): Promise<void> {
@@ -160,6 +183,12 @@ export class WhisperDockerProvider extends AbstractDockerProvider {
         console.log('🚀 Starting Whisper Docker service...');
         const result = await this.dockerServiceManager.startService();
         console.log('✅ Whisper Docker service started:', result);
+        
+        // Update API client with the actual dynamic port after service starts
+        if (result) {
+          this.updateAPIClientPort();
+        }
+        
         return result;
       } else {
         console.warn('⚠️ No Docker service manager available');
@@ -296,6 +325,13 @@ export class WhisperDockerProvider extends AbstractDockerProvider {
         lastError: error.message
       };
     }
+  }
+
+  /**
+   * Get the API client for debugging (expose private member)
+   */
+  getAPIClient(): WhisperAPIClient | undefined {
+    return this.apiClient;
   }
 }
 
