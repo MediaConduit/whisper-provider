@@ -7,31 +7,53 @@
 
 import { WhisperAPIClient } from './WhisperAPIClient';
 
-// Type definitions for MediaConduit compatibility
+// Define MediaProvider interface (will be available at runtime from MediaConduit)
 interface MediaProvider {
   readonly id: string;
   readonly name: string;
   readonly type: 'api' | 'local' | 'hybrid';
   readonly capabilities: string[];
+  readonly models: any[];
   
   configure(config: any): Promise<void>;
   isAvailable(): Promise<boolean>;
-  getModels(): Promise<any[]>;
+  getModelsForCapability(capability: string): any[];
+  getHealth(): Promise<{
+    status: 'healthy' | 'degraded' | 'unhealthy';
+    uptime: number;
+    activeJobs: number;
+    queuedJobs: number;
+    lastError?: string;
+  }>;
   getModel(modelId: string): Promise<any>;
 }
 
-interface ProviderConfig {
-  serviceUrl?: string;
-  serviceConfig?: any;
-  apiKey?: string;
-  baseUrl?: string;
-  timeout?: number;
+// AbstractDockerProvider - will be injected at runtime
+class AbstractDockerProvider implements MediaProvider {
+  readonly id: string = '';
+  readonly name: string = '';
+  readonly type: 'local' = 'local';
+  readonly capabilities: string[] = [];
+  readonly models: any[] = [];
+  
+  async configure(config: any): Promise<void> { }
+  async isAvailable(): Promise<boolean> { return false; }
+  getModelsForCapability(capability: string): any[] { return []; }
+  async getHealth(): Promise<any> { return { status: 'unhealthy', uptime: 0, activeJobs: 0, queuedJobs: 0 }; }
+  async getModel(modelId: string): Promise<any> { return null; }
+  
+  // Abstract Docker Provider methods (will be available at runtime)
+  async startService(): Promise<boolean> { return false; }
+  async stopService(): Promise<boolean> { return false; }
+  async getServiceStatus(): Promise<{ running: boolean; healthy: boolean; error?: string; }> {
+    return { running: false, healthy: false };
+  }
 }
 
 /**
  * Docker-based Whisper provider implementation extending AbstractDockerProvider
  */
-export class WhisperDockerProvider implements MediaProvider {
+export class WhisperDockerProvider extends AbstractDockerProvider {
   readonly id: string = 'whisper-docker-provider';
   readonly name: string = 'Whisper Docker Provider';
   readonly type: 'local' = 'local';
@@ -45,17 +67,18 @@ export class WhisperDockerProvider implements MediaProvider {
   ];
 
   private apiClient?: WhisperAPIClient;
-  private config?: ProviderConfig;
+  private config?: any;
   private dockerServiceManager?: any; // Docker service from ServiceRegistry
 
   constructor() {
+    super();
     console.log('🎯 WhisperDockerProvider initialized');
   }
 
   /**
    * Configure the provider with service settings and Docker service
    */
-  async configure(config: ProviderConfig): Promise<void> {
+  async configure(config: any): Promise<void> {
     console.log('🔧 Configuring WhisperDockerProvider with:', config);
     this.config = config;
 
