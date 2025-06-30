@@ -104,6 +104,47 @@ export class WhisperDockerProvider implements MediaProvider {
     
     return model;
   }
+
+  /**
+   * Get available models for a specific capability
+   */
+  getModelsForCapability(capability: string): any[] {
+    // All our models support audio-to-text capability
+    if (capability === 'audio-to-text' || capability === 'transcription' || capability === 'translation') {
+      return this.models;
+    }
+    return [];
+  }
+
+  /**
+   * Get provider health information
+   */
+  async getHealth(): Promise<{
+    status: 'healthy' | 'degraded' | 'unhealthy';
+    uptime: number;
+    activeJobs: number;
+    queuedJobs: number;
+    lastError?: string;
+  }> {
+    try {
+      const isAvailable = await this.isAvailable();
+      return {
+        status: isAvailable ? 'healthy' : 'unhealthy',
+        uptime: Date.now(),
+        activeJobs: 0,
+        queuedJobs: 0,
+        lastError: isAvailable ? undefined : 'Service not available'
+      };
+    } catch (error: any) {
+      return {
+        status: 'unhealthy',
+        uptime: 0,
+        activeJobs: 0,
+        queuedJobs: 0,
+        lastError: error.message
+      };
+    }
+  }
 }
 
 // Export as default for dynamic loading
