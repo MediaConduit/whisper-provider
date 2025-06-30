@@ -36,6 +36,13 @@ export class WhisperDockerProvider implements MediaProvider {
   readonly name: string = 'Whisper Docker Provider';
   readonly type: 'local' = 'local';
   readonly capabilities: string[] = ['audio-to-text', 'transcription', 'translation'];
+  readonly models: any[] = [
+    { id: 'whisper-tiny', name: 'Whisper Tiny', description: 'Fastest Whisper model, lower accuracy' },
+    { id: 'whisper-base', name: 'Whisper Base', description: 'Balanced speed and accuracy' },
+    { id: 'whisper-small', name: 'Whisper Small', description: 'Good accuracy, moderate speed' },
+    { id: 'whisper-medium', name: 'Whisper Medium', description: 'High accuracy, slower processing' },
+    { id: 'whisper-large', name: 'Whisper Large', description: 'Highest accuracy, slowest processing' }
+  ];
 
   private apiClient?: WhisperAPIClient;
   private config?: ProviderConfig;
