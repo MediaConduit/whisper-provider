@@ -29,7 +29,7 @@ interface ProviderConfig {
 }
 
 /**
- * Docker-based Whisper provider implementation
+ * Docker-based Whisper provider implementation extending AbstractDockerProvider
  */
 export class WhisperDockerProvider implements MediaProvider {
   readonly id: string = 'whisper-docker-provider';
@@ -46,22 +46,94 @@ export class WhisperDockerProvider implements MediaProvider {
 
   private apiClient?: WhisperAPIClient;
   private config?: ProviderConfig;
+  private dockerServiceManager?: any; // Docker service from ServiceRegistry
 
   constructor() {
     console.log('🎯 WhisperDockerProvider initialized');
   }
 
   /**
-   * Configure the provider with service settings
+   * Configure the provider with service settings and Docker service
    */
   async configure(config: ProviderConfig): Promise<void> {
     console.log('🔧 Configuring WhisperDockerProvider with:', config);
     this.config = config;
 
+    // If configured with a Docker service from the registry
+    if ((config as any).dockerServiceManager) {
+      this.dockerServiceManager = (config as any).dockerServiceManager;
+      console.log('🐳 Docker service manager configured');
+    }
+
     this.apiClient = new WhisperAPIClient(
       config.baseUrl || 'http://localhost:8080',
       config.timeout || 30000
     );
+  }
+
+  /**
+   * Start the Docker service (AbstractDockerProvider compatibility)
+   */
+  async startService(): Promise<boolean> {
+    try {
+      if (this.dockerServiceManager && typeof this.dockerServiceManager.startService === 'function') {
+        console.log('🚀 Starting Whisper Docker service...');
+        const result = await this.dockerServiceManager.startService();
+        console.log('✅ Whisper Docker service started:', result);
+        return result;
+      } else {
+        console.warn('⚠️ No Docker service manager available');
+        return false;
+      }
+    } catch (error: any) {
+      console.error('❌ Failed to start Whisper Docker service:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Stop the Docker service (AbstractDockerProvider compatibility)
+   */
+  async stopService(): Promise<boolean> {
+    try {
+      if (this.dockerServiceManager && typeof this.dockerServiceManager.stopService === 'function') {
+        console.log('🛑 Stopping Whisper Docker service...');
+        const result = await this.dockerServiceManager.stopService();
+        console.log('✅ Whisper Docker service stopped:', result);
+        return result;
+      } else {
+        console.warn('⚠️ No Docker service manager available');
+        return false;
+      }
+    } catch (error: any) {
+      console.error('❌ Failed to stop Whisper Docker service:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get Docker service status (AbstractDockerProvider compatibility)
+   */
+  async getServiceStatus(): Promise<{
+    running: boolean;
+    healthy: boolean;
+    error?: string;
+  }> {
+    try {
+      if (this.dockerServiceManager && typeof this.dockerServiceManager.getServiceStatus === 'function') {
+        const status = await this.dockerServiceManager.getServiceStatus();
+        return {
+          running: status.running || false,
+          healthy: status.health === 'healthy',
+          error: status.health === 'unhealthy' ? status.error : undefined
+        };
+      } else {
+        return { running: false, healthy: false, error: 'No Docker service manager' };
+      }
+    } catch (error: any) {
+      console.error('Failed to get service status:', error);
+      return { running: false, healthy: false, error: error.message };
+    }
   }
 
   /**
