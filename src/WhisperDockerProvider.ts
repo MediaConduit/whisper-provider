@@ -70,9 +70,36 @@ export class WhisperDockerProvider extends AbstractDockerProvider {
   private config?: any;
   private dockerServiceManager?: any; // Docker service from ServiceRegistry
 
-  constructor() {
+  constructor(dockerService?: any) {
     super();
     console.log('🎯 WhisperDockerProvider initialized');
+    
+    // If a Docker service was passed from ProviderRegistry, use it
+    if (dockerService) {
+      this.dockerServiceManager = dockerService;
+      console.log('🐳 Docker service manager configured via constructor');
+      
+      // Set up API client with service port information
+      this.setupAPIClientFromService();
+    }
+  }
+
+  /**
+   * Set up API client using Docker service port information
+   */
+  private setupAPIClientFromService(): void {
+    if (this.dockerServiceManager && typeof this.dockerServiceManager.getServiceInfo === 'function') {
+      try {
+        const serviceInfo = this.dockerServiceManager.getServiceInfo();
+        const port = serviceInfo.ports?.[0] || 9000;
+        const baseUrl = `http://localhost:${port}`;
+        
+        this.apiClient = new WhisperAPIClient(baseUrl, 30000);
+        console.log(`🌐 API client configured for: ${baseUrl}`);
+      } catch (error) {
+        console.warn('Failed to configure API client from service info:', error);
+      }
+    }
   }
 
   /**
@@ -82,16 +109,46 @@ export class WhisperDockerProvider extends AbstractDockerProvider {
     console.log('🔧 Configuring WhisperDockerProvider with:', config);
     this.config = config;
 
-    // If configured with a Docker service from the registry
-    if ((config as any).dockerServiceManager) {
-      this.dockerServiceManager = (config as any).dockerServiceManager;
-      console.log('🐳 Docker service manager configured');
+    // Check for Docker service manager in various possible property names (fallback for manual configuration)
+    if (!this.dockerServiceManager) {
+      if ((config as any).dockerServiceManager) {
+        this.dockerServiceManager = (config as any).dockerServiceManager;
+        console.log('🐳 Docker service manager configured via config.dockerServiceManager');
+      } else if ((config as any).dockerService) {
+        this.dockerServiceManager = (config as any).dockerService;
+        console.log('🐳 Docker service manager configured via config.dockerService');
+      } else if ((config as any).service) {
+        this.dockerServiceManager = (config as any).service;
+        console.log('🐳 Docker service manager configured via config.service');
+      } else {
+        console.log('🔍 No Docker service manager found in config. Available properties:', Object.keys(config));
+      }
+    } else {
+      console.log('🐳 Docker service manager already configured via constructor');
     }
 
-    this.apiClient = new WhisperAPIClient(
-      config.baseUrl || 'http://localhost:8080',
-      config.timeout || 30000
-    );
+    // Set up API client if not already configured
+    if (!this.apiClient) {
+      const baseUrl = config.baseUrl || this.detectServiceUrl() || 'http://localhost:9000';
+      this.apiClient = new WhisperAPIClient(baseUrl, config.timeout || 30000);
+      console.log(`🌐 API client configured for: ${baseUrl}`);
+    }
+  }
+
+  /**
+   * Detect service URL from Docker service info
+   */
+  private detectServiceUrl(): string | undefined {
+    if (this.dockerServiceManager && typeof this.dockerServiceManager.getServiceInfo === 'function') {
+      try {
+        const serviceInfo = this.dockerServiceManager.getServiceInfo();
+        const port = serviceInfo.ports?.[0] || 9000;
+        return `http://localhost:${port}`;
+      } catch (error) {
+        console.warn('Failed to detect service URL from Docker service:', error);
+      }
+    }
+    return undefined;
   }
 
   /**
